@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aurora_analysis"
+version = "0.1.0"
+description = "Analysis toolkit for Abacus MAP galaxy proxies: maplog/subsample I/O, halo matching, KDE environments, clustering statistics."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Helen Shao" }]
+
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "asdf>=2.14",
+    "astropy>=5.2",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+# Numba accelerates the KNN re-rank and the brute-force matcher. Both have
+# pure-numpy fallbacks, so this is optional but strongly recommended.
+fast = ["numba>=0.57"]
+# Clustering statistics.
+clustering = ["pycorr>=1.0", "Corrfunc>=2.5"]
+# Abacus product readers (use the @aurora branch for maplog rel_vel unpack).
+abacus = ["abacusutils>=2.1"]
+# Healpix direction decoding for maplog rel_vel. A pure-numpy nested-scheme
+# fallback ships in aurora_analysis.io.healpix, so this is optional.
+healpix = ["healpy>=1.16"]
+tng = ["h5py>=3.8"]
+dev = ["pytest>=7.0", "ruff>=0.1"]
+all = [
+    "numba>=0.57",
+    "pycorr>=1.0",
+    "Corrfunc>=2.5",
+    "abacusutils>=2.1",
+    "healpy>=1.16",
+    "h5py>=3.8",
+    "pytest>=7.0",
+    "ruff>=0.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

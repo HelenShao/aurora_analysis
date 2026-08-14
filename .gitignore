@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+.venv/
+venv/
+
+# Core dumps (one 38 GB sparse core appeared here from an unrelated crash).
+core
+core.*
+
+# Analysis outputs should live on Flare, not in the repo.
+*.npz
+*.asdf
+*.pkl
+*.h5
+*.hdf5
+logs/
+plots/
+catalogs/
