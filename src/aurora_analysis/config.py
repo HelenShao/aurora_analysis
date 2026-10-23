@@ -65,9 +65,12 @@ DEFAULT_PATHS: dict[str, str] = {
     "cleaning_root": f"{_FLARE}/helenshao/AbacusSummit/cleaning",
     # IllustrisTNG
     "tng_base": f"{_FLARE}/ajohnson/TNG300/TNG300-2/output",
+    # Test-5 / JUL28 timeslice sim (named path only; not a library default)
+    "jul28_root": f"{_FLARE}/helenshao/SummitHighbase_1D_highzALL_JUL28",
     # External source trees wrapped by aurora_analysis.external
     "acj_root": str(Path.home() / "InitialConditions" / "abacus" / "acj"),
     "hackaurora_root": str(Path.home() / "InitialConditions" / "hackAurora"),
+    "maplogs_root": str(Path.home() / "InitialConditions" / "aurora_maplogs"),
 }
 
 
@@ -228,6 +231,22 @@ def _register_defaults() -> None:
             kind="compaso",
             halo_R_field="r100_L2com",
             notes="Cleaned AbacusSummit highbase c000 ph100. Load with cleaned=True.",
+        )
+    )
+    register_sim(
+        SimSpec(
+            name="aurora_highbase",
+            root=path("flare_root") / "ajohnson" / "AuroraHighBase",
+            box=1000.0,
+            np_side=3456,
+            zd_seed=22321,
+            halo_R_field="r100_L2com",
+            maplog_known_duplicates=True,
+            notes=(
+                "2D MPI maplogs (col000–col002, 30 shards). "
+                "FinalRedshift=0.25; TimeSlice epochs include z=0.25 and z=0.3. "
+                "Use cleaned Summit highbase CompaSO hosts (AllowGroupFinding=0 here)."
+            ),
         )
     )
     register_sim(

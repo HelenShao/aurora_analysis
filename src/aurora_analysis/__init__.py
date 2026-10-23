@@ -14,6 +14,12 @@ Subpackages
 :mod:`aurora_analysis.external`
     Adapters for source trees maintained elsewhere (``acj``, hackAurora
     plot params).
+:mod:`aurora_analysis.io`
+    ASDF, maplog, subsample and CompaSO readers.
+:mod:`aurora_analysis.epochs`
+    MapNode ``control`` packing and step ↔ redshift.
+:mod:`aurora_analysis.cli`
+    Catalog builders (``python -m aurora_analysis.cli.build_match_catalog``).
 
 Submodules are imported lazily so that ``import aurora_analysis`` stays cheap
 and does not drag in matplotlib or scipy until something needs them.
@@ -26,7 +32,7 @@ from typing import Any
 
 __version__ = "0.1.0"
 
-_SUBMODULES = ("config", "env", "external", "match", "plotting")
+_SUBMODULES = ("cli", "config", "env", "epochs", "external", "io", "match", "plotting")
 
 __all__ = ["__version__", *_SUBMODULES]
 

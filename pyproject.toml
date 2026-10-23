@@ -43,6 +43,9 @@ all = [
     "ruff>=0.1",
 ]
 
+[project.scripts]
+aurora-build-match = "aurora_analysis.cli.build_match_catalog:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

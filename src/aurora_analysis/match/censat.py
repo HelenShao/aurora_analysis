@@ -1,15 +1,16 @@
 """Central / satellite labelling.
 
-The rule used throughout this analysis: within each matched halo, the member
-with the highest multiplicity is the central and the rest are satellites. Note
-this is a *sample-relative* definition -- it depends on which MAPs passed the
-selection cut, so the same MAP can be central in one sample and satellite in
-another. That is deliberate and matches the ELG selection convention, but it is
-the single most common source of confusion when comparing two catalogs.
+Rule: within each matched halo, the member with the highest multiplicity is
+the central (halo primary) and the rest are satellites.
 
-It is also *not* the rule used for the HOD figure, where a central is "this
-halo contains at least one MAP above the cut" rather than a specific tagged
-object. Keep the two apart.
+**Host-primary / HOD (correct production path).** Call this on the *full*
+matched MAP catalog at ``z_cat`` (Stage A) *before* ELG/LRG/ram cuts. Join
+``is_halo_primary`` onto later selections by ``maps`` id. See the package
+README section "Matching MAPs to halos (correct order)".
+
+**Sample-internal (diagnostics only).** If you pass only MAPs that already
+passed a tracer cut, the same MAP can flip cen/sat depending on who else is in
+the sample. That is *not* the host-primary definition used for HOD overlays.
 
 The implementation here is vectorised. The original looped over halo groups in
 Python, which cost minutes on the 83 M matched MAPs of a full-box highbase
