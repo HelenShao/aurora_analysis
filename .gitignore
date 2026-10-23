@@ -17,6 +17,9 @@ venv/
 core
 core.*
 
+# Local notes. Not part of the published package.
+MIGRATION.md
+
 # Analysis outputs should live on Flare, not in the repo.
 *.npz
 *.asdf
