@@ -44,6 +44,7 @@ from ..epochs import (
     resolve_timeslice_epoch,
     step_to_z_from_header_array,
     timeslice_control,
+    timeslice_steps_present,
 )
 from .asdf import open_asdf
 
@@ -91,6 +92,8 @@ __all__ = [
     "slice_maplog",
     "step_to_z_from_header_array",
     "timeslice_control",
+    "timeslice_steps_in_shard",
+    "timeslice_steps_present",
 ]
 
 BASE_KEYS = ("pos", "vel", "pid", "mult", "control", "timestep", "length")
@@ -550,6 +553,17 @@ def select_timeslice_indices_parallel(
     return np.concatenate(parts, axis=0)
 
 
+def timeslice_steps_in_shard(path: str | Path) -> np.ndarray:
+    """Sorted unique time steps that carry TimeSlice nodes in one shard.
+
+    Costs one decompression of the shard (about a second per GB); used to
+    resolve ``z_cat`` against the epochs that exist rather than every step.
+    """
+    with open_asdf(Path(path), lazy_load=False) as af:
+        raw = maplog_as_u4_rows(af.tree["data"]["maplogs"])
+        return timeslice_steps_present(raw[:, 4])
+
+
 def decode_maplog_timeslice_fast(
     path: str | Path,
     *,
@@ -648,7 +662,12 @@ def load_timeslice_maps(
     n_cols = len(col_counts)
 
     step_to_z = resolve_step_to_z(rdir=sim_root, mdir=sim_root, z_maplog=float(z_maplog))
-    epoch_step_, epoch_z = resolve_timeslice_epoch(step_to_z, float(z_cat))
+    # Only the output epochs carry TimeSlice nodes; resolving z_cat against every
+    # time step would usually land on a step with no nodes (empty catalog).
+    ts_steps = timeslice_steps_in_shard(files[0])
+    epoch_step_, epoch_z = resolve_timeslice_epoch(
+        step_to_z, float(z_cat), candidate_steps=ts_steps if len(ts_steps) else None
+    )
     target_control = timeslice_control(epoch_step_)
     dz = abs(epoch_z - float(z_cat))
     if n_workers is None:
@@ -670,6 +689,7 @@ def load_timeslice_maps(
     print(
         f"  resolved epoch once: step={epoch_step_}  z_epoch={epoch_z:.6f}  "
         f"|z-z_cat|={dz:.6g}  "
+        f"(among {len(ts_steps)} TimeSlice epochs in {files[0].name})  "
         f"target_control={target_control}  n_workers_sel={n_workers}  "
         f"sel=MapLogSegmentStarts  lazy_load=False",
         flush=True,
@@ -753,6 +773,12 @@ def load_timeslice_maps(
         f"|z-z_cat|={dz:.6g}  n_MAP={n_ts_total:,}",
         flush=True,
     )
+    if n_ts_total == 0:
+        print(
+            f"  WARNING: no TimeSlice nodes at step {epoch_step_}; "
+            f"TimeSlice epochs in {files[0].name}: {len(ts_steps)}",
+            flush=True,
+        )
     return arrays, info
 
 
