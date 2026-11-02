@@ -19,6 +19,7 @@ from aurora_analysis.epochs import (
     resolve_timeslice_epoch,
     step_to_z_from_header_array,
     timeslice_control,
+    timeslice_steps_present,
 )
 
 
@@ -102,3 +103,32 @@ def test_parse_abacus_kv_file_reads_state_scalars(tmp_path):
     assert st["FullStepNumber"] == 892
     assert st["Redshift"] == pytest.approx(0.3)
     assert st["BoxSize"] == pytest.approx(1000.0)
+
+
+def test_timeslice_steps_present_masks_the_upper_half_word():
+    # raw word 4 of a node: control in the low 16 bits, density/vel_disp bytes above
+    raw = np.array(
+        [
+            timeslice_control(340) | (0xAB << 16),
+            timeslice_control(340),
+            encode_control(340, NODE_FORMATION),
+            timeslice_control(199) | (0x11 << 24),
+        ],
+        dtype=np.uint32,
+    )
+    np.testing.assert_array_equal(timeslice_steps_present(raw), [199, 340])
+    assert timeslice_steps_present(np.array([], dtype=np.uint32)).size == 0
+
+
+def test_resolve_timeslice_epoch_prefers_steps_that_have_timeslice_nodes():
+    # steps every 0.01 in z; TimeSlice nodes only at steps 340 (z=2.01625) and 199 (z=4.00668)
+    step_to_z = {s: 2.01625 - 0.01 * (s - 340) for s in range(330, 352)}
+    step_to_z[199] = 4.00668
+    assert resolve_timeslice_epoch(step_to_z, 2.0) == (342, pytest.approx(1.99625))
+    assert resolve_timeslice_epoch(step_to_z, 2.0, candidate_steps=[199, 340]) == (
+        340,
+        pytest.approx(2.01625),
+    )
+    assert resolve_timeslice_epoch(step_to_z, 3.5, candidate_steps=np.array([340, 199]))[0] == 199
+    with pytest.raises(ValueError, match="candidate_steps"):
+        resolve_timeslice_epoch(step_to_z, 2.0, candidate_steps=[1, 2])

@@ -42,6 +42,7 @@ __all__ = [
     "resolve_timeslice_epoch",
     "step_to_z_from_header_array",
     "timeslice_control",
+    "timeslice_steps_present",
 ]
 
 #: Low 2 bits of ``control``. Matches ``maplog.cc`` / abacusnbody.
@@ -152,10 +153,37 @@ def build_step_to_z_from_maplog(maplog) -> dict[int, float]:
     return {int(s): float(z) for s, z in zip(maplog["step"], maplog["redshift"], strict=True)}
 
 
-def resolve_timeslice_epoch(step_to_z: dict, z_cat: float) -> tuple[int, float]:
-    """Nearest MAP output step to ``z_cat`` and its redshift."""
+def timeslice_steps_present(control) -> np.ndarray:
+    """Sorted unique time steps that have TimeSlice nodes in ``control``.
+
+    ``control`` may be the decoded 16-bit control word or the raw fourth
+    ``uint32`` word of the node (the upper 16 bits are masked off).
+    """
+    control = np.asarray(control).astype(np.int64) & 0xFFFF
+    return np.unique(epoch_step(control)[node_type(control) == NODE_TIMESLICE])
+
+
+def resolve_timeslice_epoch(
+    step_to_z: dict, z_cat: float, *, candidate_steps=None
+) -> tuple[int, float]:
+    """Nearest MAP output step to ``z_cat`` and its redshift.
+
+    ``step_to_z`` has one entry per *time step* of the run, but TimeSlice nodes
+    are only written at the output epochs (every ~30th step). Without
+    ``candidate_steps`` the nearest step overall is returned, which for a round
+    ``z_cat`` is usually a step with no TimeSlice nodes at all (e.g. ``z_cat=2.0``
+    on rockV2 resolves to step 342 at z=1.997 instead of the output at step
+    340, z=2.01625, and the catalog comes back empty). Pass the steps that
+    actually carry TimeSlice nodes (see :func:`timeslice_steps_present`) to
+    restrict the search to real epochs.
+    """
     if not step_to_z:
         raise ValueError("empty step_to_z")
+    if candidate_steps is not None:
+        cand = [int(s) for s in np.unique(np.asarray(candidate_steps, dtype=np.int64))]
+        step_to_z = {s: step_to_z[s] for s in cand if s in step_to_z}
+        if not step_to_z:
+            raise ValueError("none of candidate_steps has a Step_to_Z entry")
     steps = np.fromiter(step_to_z.keys(), dtype=np.int64, count=len(step_to_z))
     zs = np.empty(len(steps), dtype=np.float64)
     for i, s in enumerate(steps):
